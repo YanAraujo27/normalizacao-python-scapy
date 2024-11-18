@@ -1,0 +1,69 @@
+import spacy
+from difflib import SequenceMatcher  
+
+# Carregar o modelo spaCy
+nlp = spacy.load("en_core_web_sm")
+
+# Lista de palavras normalizadas
+target_words = ["efetivo"]
+
+# Função para calcular similaridade ortográfica com difflib
+def difflib_similarity(word1, word2):
+    return SequenceMatcher(None, word1, word2).ratio()
+
+# Função para normalizar a entrada
+def normalize_input(input_text, threshold_spacy=0.8, threshold_difflib=0.8):
+    # Pré-processar entrada
+    input_text = input_text.lower().strip()
+    
+    # Variáveis para armazenar as melhores correspondências
+    best_match = None
+    best_spacy_score = 0
+    best_difflib_score = 0
+    
+    # Processar a entrada com spaCy
+    input_doc = nlp(input_text)
+    
+    for word in target_words:
+        # Similaridade semântica com spaCy
+        target_doc = nlp(word)
+        spacy_similarity = input_doc.similarity(target_doc)
+        
+        # Similaridade ortográfica com difflib
+        difflib_score = difflib_similarity(input_text, word)
+        
+        # Combinar scores para decidir
+        if spacy_similarity > best_spacy_score or difflib_score > best_difflib_score:
+            if spacy_similarity >= threshold_spacy or difflib_score >= threshold_difflib:
+                best_match = word
+                best_spacy_score = spacy_similarity
+                best_difflib_score = difflib_score
+
+    # Retornar a melhor correspondência encontrada
+    if best_match:
+        return best_match, best_spacy_score, best_difflib_score
+    else:
+        return None, best_spacy_score, best_difflib_score
+
+# MVP com entrada no console
+def main():
+    print("Sistema de Normalização Automática")
+    print("Digite 'sair' para encerrar.\n")
+    
+    while True:
+        user_input = input("Digite uma palavra: ").strip()
+        if user_input.lower() == "sair":
+            print("Encerrando o sistema.")
+            break
+        
+        normalized, spacy_score, difflib_score = normalize_input(user_input)
+        if normalized:
+            print(f"Entrada original: {user_input}")
+            print(f"Normalizado para: {normalized}")
+            print(f"Similaridade (spaCy): {spacy_score:.2f}, Similaridade (difflib): {difflib_score:.2f}\n")
+        else:
+            print(f"Palavra '{user_input}' não pôde ser normalizada.")
+            print(f"Similaridade máxima (spaCy): {spacy_score:.2f}, (difflib): {difflib_score:.2f}\n")
+
+if __name__ == "__main__":
+    main()
